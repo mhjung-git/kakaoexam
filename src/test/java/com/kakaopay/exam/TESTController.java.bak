@@ -1,0 +1,79 @@
+package com.kakaopay.exam;
+
+import java.io.BufferedWriter;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
+import org.apache.catalina.authenticator.Constants;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.kakaopay.exam.throwmoney.Crypto;
+
+@Controller
+@RequestMapping("/test")
+@SuppressWarnings("unchecked")
+public class TESTController {
+
+	@RequestMapping(value = "/apitest") 
+	public String orderTEST(ModelMap model) throws Exception {
+		
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("CPID", "CTS10273");
+		jsonObj.put("PAYMETHOD", "CARD");
+		
+		// API 연동 요청
+		String sendurl = "http://localhost:8080/v1/api/";
+		
+		
+		URL url = new URL(sendurl);
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+		//커넥션 옵션, 헤더 값 설정
+		con.setRequestMethod("POST");
+		con.setRequestProperty("Content-Type", "application/json;charset=EUC-KR");
+		con.setRequestProperty("Authorization", "dd30871138b6167e3310b3a4d577297c092e30d09239a53e87214aede1531709");
+		con.setRequestProperty("Header", );
+		//dd30871138b6167e3310b3a4d577297c092e30d09239a53e87214aede1531709 CTS10273,yongbill
+
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(new Date());
+		cal.add(Calendar.MINUTE, 5);			
+		int fakeNum = (int) (Math.random()*10) +1;
+		char fakeEng =(char) (fakeNum+97);
+		con.setRequestProperty("TOKEN", fakeNum+Crypto.Encrypt(Constants.S_SECURITY_KEY, formatter.format(cal.getTime()))+fakeEng );
+		
+		con.setUseCaches(false);
+		con.setDoOutput(true);
+		con.setDoInput(true);
+
+		//연결요청
+		OutputStream os = con.getOutputStream();
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "EUC-KR"));
+
+		System.out.println("jsonObj.toString()======zz==="+jsonObj.toString());
+		writer.write("");
+		os.write((jsonObj.toString()).getBytes("EUC-KR"));
+		writer.flush();
+		writer.close();
+		os.close();
+		con.connect();
+
+		//호출 결과 값
+		int responseCode = con.getResponseCode();
+		String responseMsg = con.getResponseMessage();
+
+		System.out.println("responseCode======zz==="+responseCode);
+		System.out.println("responseMsg======zz==="+responseMsg);
+	
+		con.disconnect();
+		return "/pay/index";	//localhost:8080/result.jsp 로 보내기?
+}
