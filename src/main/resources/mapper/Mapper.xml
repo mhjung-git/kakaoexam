@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="SprinklingMapper">
-    <select id="getUserchk" parameterType="java.util.Map" resultType="java.lang.String">
+    <select id="getUserchk" parameterType="java.util.Map" resultType="java.lang.Integer">
 		SELECT COUNT(*) AS CNT
 		  FROM TM_USER
 		 WHERE ID = #{x-user-id}
@@ -22,20 +22,21 @@
 					#{token},
 					#{tot_amt},
 					#{divi_amt},
-					`0`,
-					(SELECT ROOM FROM TM_USER WHERE ID = #{ACTION_ID}),
+					'0',
+					(SELECT ROOM FROM TM_USER WHERE ID = #{action_id}),
 					#{action_id},
 					#{throw_dt}
 		)
 	</insert>
-	<select id="getReiceveChk" parameterType="java.util.Map" resultType="java.lang.String">
+
+	<select id="getReiceveChk" parameterType="java.util.Map" resultType="java.lang.Integer">
 		SELECT COUNT(*) AS CNT
 		  FROM TT_SPRINKLING
 		 WHERE TOKEN = #{token}
 		   AND RECIEVE_ID  = #{recieve_id}
 	</select>
 
-	<select id="getAabledMoneyChk" parameterType="java.util.Map" resultType="java.lang.String">
+	<select id="getAabledMoneyChk" parameterType="java.util.Map" resultType="java.lang.Integer">
 		SELECT COUNT(*) AS CNT
 		  FROM TT_SPRINKLING
 		 WHERE TOKEN = #{token}
@@ -49,14 +50,14 @@
 	
 	<update id="doRecieveMoney" parameterType="java.util.Map">
 		UPDATE TT_SPRINKLING 
-		   SET STATUS_CD='11', RECIEVE_ID=#{recieve_id}
-		 WHERE SEQ = (select MAX(SEQ) FROM TT_SPRINKLING WHERE TOKEN=#{token})
+		   SET STATUS_CD='11', RECIEVE_ID=#{recieve_id}, RECIEVE_DT=#{recieve_dt}
+		 WHERE SEQ = (select MAX(SEQ) FROM TT_SPRINKLING WHERE TOKEN=#{token} AND STATUS_CD='0')
 	</update>
 	 
 	<select id="getRecieveAmt" parameterType="java.util.Map" resultType="java.lang.String">
 		SELECT DIVI_AMT 
 		  FROM TT_SPRINKLING
-		 WHERE SEQ = (SELECT MAX(seq) FROM TT_SPRINKLING WHERE TOKEN=#{token} AND RECIEVE_ID IS NOT NULL);	
+		 WHERE SEQ = (SELECT MAX(seq) FROM TT_SPRINKLING WHERE TOKEN=#{token} AND RECIEVE_ID=#{recieve_id})
 	</select>
 	
 	<select id="getCheckHistoryDetail" parameterType="java.util.Map" resultType="java.util.HashMap">
@@ -65,16 +66,21 @@
 		 WHERE TOKEN = #{token}
 		   AND INSERT_DT = #{insert_dt}
 		   AND ACTION_ID = #{req_id}
+		   <![CDATA[
 		   AND NOW() BETWEEN INSERT_DT AND DATE_ADD(INSERT_DT, INTERVAL 7 DAY)
+		   ]]>
 		   AND STATUS_CD = '11'
 		 ORDER BY INSERT_DT
 	</select>
+	
 	<select id="getCheckHistoryComm" parameterType="java.util.Map" resultType="java.util.HashMap">
 		SELECT INSERT_DT, TOT_AMT, SUM(DIVI_AMT) AS TOT_RECV_AMT
 		  FROM TT_SPRINKLING
 		 WHERE TOKEN = #{token}
 		   AND ACTION_ID = #{req_id}
+		   <![CDATA[
 		   AND NOW() BETWEEN INSERT_DT AND DATE_ADD(INSERT_DT, INTERVAL 7 DAY)
+		   ]]>
 		   AND STATUS_CD = '11'
 	     GROUP BY INSERT_DT
 		 ORDER BY INSERT_DT

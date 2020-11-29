@@ -5,9 +5,9 @@ import java.util.HashMap;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -44,7 +44,7 @@ public class SprinklingController {
 	}
 
 	public boolean checkIsAlpha(String s) {
-		return s.matches("[a-zA-Z0-9]+");
+		return s.matches("[a-zA-Z]+");
 	}
 
 	@GetMapping("hello")
@@ -56,12 +56,12 @@ public class SprinklingController {
 	 * (공통) MemberChk 기능 : hearder에 X_USER_ID, X_ROOM_ID 조회 
 	 * 
 	 */
+	@RequestMapping(value = "/test", method = RequestMethod.GET)
 	@ResponseBody
 	public boolean getUserchk(@RequestParam HttpServletRequest request) throws Exception {
 		String user_id = request.getHeader("X-USER-ID");
 		String room_id = request.getHeader("X-ROOM-ID");
 		boolean access_chk = true;
-		
 		
 		if (!checkIsNumber(user_id)) {access_chk = false; return access_chk;}
 		if (!checkIsAlpha(room_id)) {access_chk = false; return access_chk;}
@@ -69,6 +69,7 @@ public class SprinklingController {
 		HashMap<String, String> map = new HashMap<String, String>();
 		map.put("x-user-id", user_id);
 		map.put("x-room-id", room_id);
+		
 		
 		access_chk = sprinklingService.getUserchk(map);
 		
@@ -81,16 +82,16 @@ public class SprinklingController {
 	 * sprinklingMoney 기능 : 뿌리기 input : amount, person output : sp_token
 	 * 
 	 */
-	@RequestMapping(value = "/sprinkling" , method = RequestMethod.POST)
+	@RequestMapping(value = "/sprinkling", method = RequestMethod.POST)
 	@ResponseBody
-	public String sprinklingMoney(HttpServletRequest request, @RequestParam int amount, int person) throws Exception {
+	public JSONObject sprinklingMoney(HttpServletRequest request, @RequestParam int amount, int person) throws Exception {
 		JSONObject resultMsg = new JSONObject();
+		
 		/*USER CHECK*/
 		boolean Access_yn = getUserchk(request);
-		System.out.println("Access_yn="+Access_yn);
 		if (Access_yn) {
 			Object result = null; //token
-			result = throwmoneyService.doSprinklingMoney(amount, person, request.getHeader("X-USER-ID"));
+			result = throwmoneyService.doSprinklingMoney(amount, person);
 			
 			resultMsg.put("result", result);
 		}
@@ -98,8 +99,7 @@ public class SprinklingController {
 			resultMsg.put("result", "사용 가능 사용자 아님 [ERROR:9999]");
 		}
 		
-		System.out.println("resultMsg="+resultMsg.toString());
-		return resultMsg.toString();
+		return resultMsg;
 	}
 
 	/*
@@ -108,12 +108,13 @@ public class SprinklingController {
 	 */
 	@RequestMapping(value = "/recieve", method = RequestMethod.POST)
 	@ResponseBody
-	public String RecieveMoney(HttpServletRequest request, @RequestParam String token) throws Exception {
+	public JSONObject RecieveMoney(HttpServletRequest request, @RequestParam String token, String recieve_id) throws Exception {
 		JSONObject resultMsg = new JSONObject();
-		String result = null; // 받은금액
+		
 		/*USER CHECK*/
 		boolean Access_yn = getUserchk(request);
 		if (Access_yn) {
+			Object result = null; // 받은금액
 			
 			result = recieveService.doRecieveMoney(token, request.getHeader("X-USER-ID"));
 			
@@ -123,17 +124,17 @@ public class SprinklingController {
 			resultMsg.put("result", "사용 가능 사용자 아님 [ERROR:9999]");
 		}
 		
-		
-		return resultMsg.toString();
+		return resultMsg;
 	}
 
 	/*
 	 * CheckHistory 기능 : 조회 input : output :
 	 * 
 	 */	
+	
 	 @RequestMapping(value = "/check", method = RequestMethod.POST)
 	 @ResponseBody 
-	 public String CheckHistory(HttpServletRequest request, @RequestParam String token) throws Exception { 
+	 public JSONObject CheckHistory(HttpServletRequest request, @RequestParam String token, String req_id) throws Exception { 
 		 JSONObject resultMsg = new JSONObject();	//뿌린시각, 뿌린금액, 받기완료된 금액
 		 	 
 		
@@ -148,7 +149,7 @@ public class SprinklingController {
 		else {
 			resultMsg.put("result", "사용 가능 사용자 아님 [ERROR:9999]");
 		}
-		return resultMsg.toString(); 
+		return resultMsg; 
 	 }
 	 
 }
